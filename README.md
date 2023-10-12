@@ -16,9 +16,13 @@ Ce code entre dans le contexte de la numérisation des photos des archives ONF d
 ## Structure du programme <a name="structure"></a>
 
 • catal-photos-ONF-RTM74.py
+
 • config.ini : fichier de configuration de l'OCR et des chemins d'accès.
+
 • keywords.ini : liste des mots clés de la base Picasa.
+
 • SubLocation.ini : liste des lieux reconnus dans la base Picasa (régions, régions naturelles, communes) spécifiques au service 74.
+
 • divDomaniales.ini : liste des divisions domaniales spécifiques au service 74. Non employé.
 
 ## Utilisation <a name="utilisation"></a>
