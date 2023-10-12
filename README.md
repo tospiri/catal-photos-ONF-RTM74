@@ -1,4 +1,4 @@
-# Titre du Projet
+# catal-photos-ONF-RTM74
 
 Ce code entre dans le contexte de la numérisation des photos des archives ONF du service RTM 74. Le service inventorie environ 6000 photographies. L’objectif de ce programme est donc d’océriser automatiquement les légendes présentes sur les numérisations des photos et de trier le contenu dans un fichier CSV afin de simplifier l’importation des données IPTC dans la base Picasa.
 
