@@ -10,7 +10,9 @@ Ce code entre dans le contexte de la numérisation des photos des archives ONF d
 ## Objectifs <a name="objectifs"></a>
 
 • OCR des photos par paquets.
+
 • Reconnaissance automatique du contenu à cataloguer (lieu, date, mots clés).
+
 • Envoi du contenu dans un fichier CSV.
 
 ## Structure du programme <a name="structure"></a>
