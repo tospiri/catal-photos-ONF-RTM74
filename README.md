@@ -23,7 +23,7 @@ Ce code entre dans le contexte de la numérisation des photos des archives ONF d
 
 ## Utilisation <a name="utilisation"></a>
 
-    1. Installer [tesseract](https://digi.bib.uni-mannheim.de/tesseract/tesseract-ocr-w64-setup-5.3.3.20231005.exe).
+    1. Installer <a href="https://digi.bib.uni-mannheim.de/tesseract/tesseract-ocr-w64-setup-5.3.3.20231005.exe">tesseract</a>.
     2. Définir le chemin de tesseract dans config.ini.
     3. Définir le répertoire contenant les photos à traiter dans config.ini, par défaut "process".
     4. Lancement du code.
