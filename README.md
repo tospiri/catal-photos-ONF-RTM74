@@ -20,13 +20,15 @@ Ce code entre dans le contexte de la numérisation des photos des archives ONF d
     • keywords.ini : liste des mots clés de la base Picasa.
     • SubLocation.ini : liste des lieux reconnus dans la base Picasa (régions, régions naturelles, communes) spécifiques au service 74.
     • divDomaniales.ini : liste des divisions domaniales spécifiques au service 74. Non employé.
+
 ## Utilisation <a name="utilisation"></a>
 
-    1. Définir le chemin de tesseract dans config.ini.
-    2. Définir le répertoire contenant les photos à traiter dans config.ini, par défaut "process".
-    3. Lancement du code.
-    4. Récupération des données dans donnees_fichiers.csv
+    1. Installer [tesseract](https://digi.bib.uni-mannheim.de/tesseract/tesseract-ocr-w64-setup-5.3.3.20231005.exe).
+    2. Définir le chemin de tesseract dans config.ini.
+    3. Définir le répertoire contenant les photos à traiter dans config.ini, par défaut "process".
+    4. Lancement du code.
+    5. Récupération des données dans donnees_fichiers.csv
+    
 ## Contact <a name="contact"></a>
-
 Teïlo Ospiri : teilo.ospiri@onf.fr, teilo.ospiri@gmail.com
 
