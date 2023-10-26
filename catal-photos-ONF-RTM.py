@@ -44,7 +44,8 @@ mois = {
 }
 
 # Expressions régulières pour extraire la date
-date_pattern = re.compile(r'(' + '|'.join(mois) + r')\s\d{4}'r'|\d\d\s(' + '|'.join(mois) + r')\s\d{4}', re.IGNORECASE)
+date_pattern = re.compile(r'(' + '|'.join(mois) + r')\s\d{4}'r'|\d\d\s(' + '|'.join(mois) + r')\s\d{4}',
+                          re.IGNORECASE)
 date_num_pattern = re.compile(r'\d{1,2}.\d{1,2}.\d{4}|\d{4}')
 
 def autoOCR(filename):
@@ -52,7 +53,6 @@ def autoOCR(filename):
     for filename in files:
         image = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
         print(filename)
-
         # OCR
         outOCR[filename] = pytesseract.image_to_string(image, config=config_tesseract)
     return outOCR
@@ -109,12 +109,17 @@ parse_locations = lire_fichier_structure('SubLocation.ini')
 parse_keywords = lire_fichier_structure('keywords.ini')
 
 #OCRisation des photos
-data = autoOCR(files)
+outOCR = {}
+for jpgs in files:
+    image = cv2.imread(str(jpgs), cv2.IMREAD_GRAYSCALE)
+    print(jpgs)
+    # OCR
+    outOCR[jpgs] = pytesseract.image_to_string(image, config=config_tesseract)
 
 indx = 0
 donnees_fichiers = []
 # Parcourir les données OCR
-for photo in data:
+for photo in outOCR:
     donnees_fichiers.append({
             "chemin_jpg": "",
             "Category": "",
@@ -133,9 +138,11 @@ for photo in data:
             "DigitizeDate": ""
         })
 
+# GESTION DATE :
     # Chercher la date dans le texte
-    date_match = re.search(date_pattern, data[photo])
-    date_num_match = re.search(date_num_pattern, data[photo])
+    date_match = re.search(date_pattern, outOCR[photo])
+    date_num_match = re.search(date_num_pattern, outOCR[photo])
+
     #Si date écrite
     if date_match:
         date_string = date_match.group()
@@ -157,20 +164,24 @@ for photo in data:
     #Si date numérique
     elif date_num_match:
         date_string = date_num_match.group()
+        # Si AAAA
+        if len(date_string) == 4:
+            date_string = "01/01/" + date_string
         date_string = date_string[0:2] + "/" + date_string[3:5] + "/" + date_string[6:10]
         donnees_fichiers[indx]["releaseDate"] = date_string
         donnees_fichiers[indx]["DigitizeDate"] = date_string
 
+
     # Pour CSV
-    data[photo] = data[photo].replace(';', ',')
-    data[photo] = data[photo].replace('\n', ' - ')
-    data[photo] = data[photo].replace('\r', '')
+    outOCR[photo] = outOCR[photo].replace(';', ',')
+    outOCR[photo] = outOCR[photo].replace('\n', ' - ')
+    outOCR[photo] = outOCR[photo].replace('\r', '')
 
     #Recherche du lieu dans les resultats
-    results_locations = chercher_correspondances(parse_locations, data[photo].replace(' ', '_'))
+    results_locations = chercher_correspondances(parse_locations, outOCR[photo].replace(' ', '_'))
 
     #Recherche des mots-clées dans les resultats
-    results_keywords = chercher_correspondances(parse_keywords, data[photo].replace(' ', '_'))
+    results_keywords = chercher_correspondances(parse_keywords, outOCR[photo].replace(' ', '_'))
 
     #Attribution des données
     donnees_fichiers[indx]["chemin_jpg"] = photo
@@ -181,19 +192,24 @@ for photo in data:
     donnees_fichiers[indx]["State"] = "HAUTE-SAVOIE"
     donnees_fichiers[indx]["Copyright"] = "© Office National des Forêts"
     donnees_fichiers[indx]["RefService"] = "889104"
-    donnees_fichiers[indx]["Keywords"] = "ARCHIVES PHOTOGRAPHIQUES,"
-    donnees_fichiers[indx]["Category"] = "R.T.M"
+    donnees_fichiers[indx]["Keywords"] = "R.T.M,ARCHIVES PHOTOGRAPHIQUES,"
+    donnees_fichiers[indx]["Category"] = ""
     for correspondance, parent in results_keywords:
         if correspondance.upper() not in donnees_fichiers[indx]["Keywords"]:
+            donnees_fichiers[indx]["Keywords"] = donnees_fichiers[indx]["Keywords"] + parent.upper() + ","
             if correspondance.upper() == "GLISSEMENT": #Exception pour ce mot-clé courant
                 correspondance = "GLISSEMENT DE TERRAIN"
             donnees_fichiers[indx]["Keywords"] = donnees_fichiers[indx]["Keywords"] + correspondance.upper() + ","
-            if parent:
-                donnees_fichiers[indx]["Category"] = parent.upper()
+
     # Le reste du texte est considéré comme la légende
-    donnees_fichiers[indx]["ImageCaption"] = data[photo] + " - [Cette légende a été traitée automatiquement par OCR]"
+    donnees_fichiers[indx]["ImageCaption"] = outOCR[photo] + " - OCR n° " + str(indx)
     donnees_fichiers[indx]["ContentLocName"] = "" #Division domaniale, liste ini présente mais pas de moyens d'automatiser
     donnees_fichiers[indx]["ImageCredit"] = "Autre RTM"
+
+    if not donnees_fichiers[indx]["releaseDate"] :
+        donnees_fichiers[indx]["ImageCaption"] = donnees_fichiers[indx]["ImageCaption"] + " SD"
+    if not donnees_fichiers[indx]["City"] :
+        donnees_fichiers[indx]["ImageCaption"] = donnees_fichiers[indx]["ImageCaption"] + " SL"
 
     indx += 1
 
