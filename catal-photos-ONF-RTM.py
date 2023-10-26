@@ -48,16 +48,6 @@ date_pattern = re.compile(r'(' + '|'.join(mois) + r')\s\d{4}'r'|\d\d\s(' + '|'.j
                           re.IGNORECASE)
 date_num_pattern = re.compile(r'\d{1,2}.\d{1,2}.\d{4}|\d{4}')
 
-def autoOCR(filename):
-    outOCR = {}
-    for filename in files:
-        image = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
-        print(filename)
-        # OCR
-        outOCR[filename] = pytesseract.image_to_string(image, config=config_tesseract)
-    return outOCR
-
-
 # Permet de lire les fichiers INI selon l'indentation
 def lire_fichier_structure(file_path):
     structure = {}  # Dictionnaire pour stocker la structure
