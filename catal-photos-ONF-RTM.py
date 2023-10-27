@@ -2,10 +2,13 @@ import re
 import csv
 import cv2
 import pytesseract
+import time
 
 from pathlib import Path
 
 import configparser
+
+t0 = time.time()
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -93,6 +96,19 @@ def chercher_correspondances(structure, texte):
 
     chercher_dans_structure(structure, texte)
     return correspondances
+
+def nettoyer_legende(input_string):
+    parts = input_string.split("-")
+    cleaned_parts = []
+
+    for part in parts:
+        # Vérifie que le morceau contient bien des lettres ou 4 chiffres
+        if not re.search(r'[a-z]|\d{4}', part.lower()):
+            continue
+        cleaned_parts.append(part)
+
+    result = "-".join(cleaned_parts)
+    return result
 
 # Lecture des fichiers .ini
 parse_locations = lire_fichier_structure('SubLocation.ini')
@@ -185,15 +201,19 @@ for photo in outOCR:
     donnees_fichiers[indx]["Keywords"] = "R.T.M,ARCHIVES PHOTOGRAPHIQUES,"
     donnees_fichiers[indx]["Category"] = ""
     for correspondance, parent in results_keywords:
-        if correspondance.upper() not in donnees_fichiers[indx]["Keywords"]:
-            donnees_fichiers[indx]["Keywords"] = donnees_fichiers[indx]["Keywords"] + parent.upper() + ","
-            if correspondance.upper() == "GLISSEMENT": #Exception pour ce mot-clé courant
-                correspondance = "GLISSEMENT DE TERRAIN"
-            donnees_fichiers[indx]["Keywords"] = donnees_fichiers[indx]["Keywords"] + correspondance.upper() + ","
-
+        if parent:
+            if correspondance.upper() not in donnees_fichiers[indx]["Keywords"]:
+                donnees_fichiers[indx]["Keywords"] = donnees_fichiers[indx]["Keywords"] + parent.upper() + ","
+                if correspondance.upper() == "GLISSEMENT": #Exception pour ce mot-clé courant
+                    correspondance = "GLISSEMENT DE TERRAIN"
+                donnees_fichiers[indx]["Keywords"] = donnees_fichiers[indx]["Keywords"] + correspondance.upper() + ","
+    # Gestion des divisions domaniales, mais peu de chance d'indexer cette donnée automatiquement
+    with open("divsDomaniales.ini", 'r', encoding='utf-8') as file:
+        for line in file:
+            if line in outOCR[photo]:
+                donnees_fichiers[indx]["ContentLocName"] = line
     # Le reste du texte est considéré comme la légende
-    donnees_fichiers[indx]["ImageCaption"] = outOCR[photo] + " - OCR n° " + str(indx)
-    donnees_fichiers[indx]["ContentLocName"] = "" #Division domaniale, liste ini présente mais pas de moyens d'automatiser
+    donnees_fichiers[indx]["ImageCaption"] = nettoyer_legende(outOCR[photo]) + " - OCR n° " + str(indx)
     donnees_fichiers[indx]["ImageCredit"] = "Autre RTM"
 
     if not donnees_fichiers[indx]["releaseDate"] :
@@ -203,6 +223,8 @@ for photo in outOCR:
 
     indx += 1
 
+# Fermeture divDomaniales.ini
+file.close()
 print("Nombre de traitements : " + str(indx))
 
 # Definition des noms des champs du CSV
@@ -218,4 +240,5 @@ with open(nom_fichier_csv, mode='w', newline='', encoding='ansi') as fichier_csv
         writer.writerow(donnee)
     print("Données extraites dans " + nom_fichier_csv)
 
-
+t1 = time.time()
+print("temps : = " + str(t1-t0))
