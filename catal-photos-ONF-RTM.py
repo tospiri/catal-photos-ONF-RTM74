@@ -49,7 +49,7 @@ mois = {
 # Expressions régulières pour extraire la date
 date_pattern = re.compile(r'(' + '|'.join(mois) + r')\s\d{4}'r'|\d\d\s(' + '|'.join(mois) + r')\s\d{4}',
                           re.IGNORECASE)
-date_num_pattern = re.compile(r'\d{1,2}.\d{1,2}.\d{4}|\d{4}')
+date_num_pattern = re.compile(r'\d{1,2}.\d{1,2}.\d{4}|[12]\d\d\d')
 
 # Permet de lire les fichiers INI selon l'indentation
 def lire_fichier_structure(file_path):
@@ -114,13 +114,25 @@ def nettoyer_legende(input_string):
 parse_locations = lire_fichier_structure('SubLocation.ini')
 parse_keywords = lire_fichier_structure('keywords.ini')
 
-#OCRisation des photos
-outOCR = {}
-for jpgs in files:
-    image = cv2.imread(str(jpgs), cv2.IMREAD_GRAYSCALE)
-    print(jpgs)
-    # OCR
-    outOCR[jpgs] = pytesseract.image_to_string(image, config=config_tesseract)
+mode = input("Processus d'indexation automatique du RTM74, vous voulez :\nOcériser et indexer les photos, entrez '1'.\nIndexer le ficher " + nom_fichier_csv + ", entrez '2'.")
+if mode == "1":
+    #OCRisation des photos
+    outOCR = {}
+    for jpgs in files:
+        image = cv2.imread(str(jpgs), cv2.IMREAD_GRAYSCALE)
+        print(jpgs)
+        # OCR
+        outOCR[jpgs] = pytesseract.image_to_string(image, config=config_tesseract)
+elif mode == "2":
+    outOCR = {}
+    with open(nom_fichier_csv, mode='r', newline='', encoding='ansi') as fichier_csv:
+        # Créez un objet lecteur CSV
+        lecteur_csv = csv.DictReader(fichier_csv, delimiter=';')
+
+        # Parcourez chaque ligne du fichier CSV
+        for ligne in lecteur_csv:
+            outOCR[ligne['chemin_jpg']] = ligne['ImageCaption']
+    fichier_csv.close()
 
 indx = 0
 donnees_fichiers = []
@@ -141,7 +153,8 @@ for photo in outOCR:
             "Copyright": "",
             "RefService": "",
             "releaseDate": "",
-            "DigitizeDate": ""
+            "DigitizeDate": "",
+            "nom_final": ""
         })
 
 # GESTION DATE :
@@ -221,6 +234,16 @@ for photo in outOCR:
     if not donnees_fichiers[indx]["City"] :
         donnees_fichiers[indx]["ImageCaption"] = donnees_fichiers[indx]["ImageCaption"] + " SL"
 
+    #Nommage du fichier, à déplacer dans un programme externe afin de le faire après redaction manuelle des légendes manquantes
+    if date_string:
+        donnees_fichiers[indx]["nom_final"] = date_string[6:10]+date_string[3:5]+date_string[0:2]
+    else:
+        donnees_fichiers[indx]["nom_final"] = "00000000"
+    if results_locations:
+        donnees_fichiers[indx]["nom_final"] = donnees_fichiers[indx]["nom_final"] + "-" + results_locations[0][0][0:8]
+    else:
+        donnees_fichiers[indx]["nom_final"] = donnees_fichiers[indx]["nom_final"] + "-" + "inconnue"
+    donnees_fichiers[indx]["nom_final"] = donnees_fichiers[indx]["nom_final"] + "-" + str(indx).rjust(4, '0')
     indx += 1
 
 # Fermeture divDomaniales.ini
@@ -230,7 +253,7 @@ print("Nombre de traitements : " + str(indx))
 # Definition des noms des champs du CSV
 noms_champs = ["chemin_jpg", "Category", "Orientation", "Keywords", "LocationName", "State", "City",
                    "ContentLocName", "SubLocation", "ImageCredit", "ImageCaption", "Copyright", "RefService",
-                   "releaseDate", "DigitizeDate", ""]
+                   "releaseDate", "DigitizeDate", "nom_final"]
 
 # Ecriture des données dans le fichier CSV
 with open(nom_fichier_csv, mode='w', newline='', encoding='ansi') as fichier_csv:
