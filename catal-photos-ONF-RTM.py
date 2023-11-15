@@ -18,6 +18,7 @@ config_tesseract = config['Localisation OCR']['config_tesseract']
 directory = config['Fichiers']['directory']
 nom_fichier_csv = config['Fichiers']['nom_fichier_csv']
 formatImg = config['Fichiers']['formatImg']
+nom_fichier_imprt = config['Fichiers']['nom_fichier_imprt']
 
 files = Path(directory).rglob(formatImg)
 
@@ -50,6 +51,12 @@ mois = {
 date_pattern = re.compile(r'(' + '|'.join(mois) + r')\s\d{4}'r'|\d\d\s(' + '|'.join(mois) + r')\s\d{4}',
                           re.IGNORECASE)
 date_num_pattern = re.compile(r'\d{1,2}.\d{1,2}.\d{4}|[12]\d\d\d')
+
+# Definition des noms des champs du CSV
+noms_champs = ["chemin_jpg", "Category", "Orientation", "Keywords", "LocationName", "State", "City",
+                   "ContentLocName", "SubLocation", "ImageCredit", "ImageCaption", "Copyright", "RefService",
+                   "releaseDate", "DigitizeDate", "nom_final"]
+
 
 # Permet de lire les fichiers INI selon l'indentation
 def lire_fichier_structure(file_path):
@@ -114,10 +121,16 @@ def nettoyer_legende(input_string):
 parse_locations = lire_fichier_structure('SubLocation.ini')
 parse_keywords = lire_fichier_structure('keywords.ini')
 
-mode = input("Processus d'indexation automatique du RTM74, vous voulez :\nOcériser et indexer les photos, entrez '1'.\nIndexer le ficher " + nom_fichier_csv + ", entrez '2'.")
+mode = input("Processus d'indexation automatique du RTM74, vous voulez :"
+             "\n     Océriser et indexer les photos, entrez '1'. (Cas de base)"
+             "\n     Indexer les légendes dans le ficher " + nom_fichier_csv + ", entrez '2'. (Utile lors d'un affinage des légendes, post étape 1.)"
+             "\n     Indexer des légendes depuis un fichier " + nom_fichier_imprt + " vers " + nom_fichier_csv + ", entrez '3'. (Utile suite à un légendage manuel, avec un chemin_jpg relatif.)")
+
 if mode == "1":
     #OCRisation des photos
     outOCR = {}
+    if not files:
+        print("Aucun fichier détécté, avez-vous renseigné correctement config.ini ?")
     for jpgs in files:
         image = cv2.imread(str(jpgs), cv2.IMREAD_GRAYSCALE)
         print(jpgs)
@@ -126,13 +139,22 @@ if mode == "1":
 elif mode == "2":
     outOCR = {}
     with open(nom_fichier_csv, mode='r', newline='', encoding='ansi') as fichier_csv:
-        # Créez un objet lecteur CSV
+        # Crée un objet lecteur CSV
         lecteur_csv = csv.DictReader(fichier_csv, delimiter=';')
 
-        # Parcourez chaque ligne du fichier CSV
+        # Parcourt chaque ligne du fichier CSV, alimente outOCR chemin:légende
         for ligne in lecteur_csv:
             outOCR[ligne['chemin_jpg']] = ligne['ImageCaption']
     fichier_csv.close()
+elif mode =="3":
+    # Lire les données du fichier "scan_dia.csv"
+    outOCR = {}
+    with open(nom_fichier_imprt, mode='r', newline='', encoding='ansi') as fichier_scan_dia:
+        lecteur_scan_dia = csv.DictReader(fichier_scan_dia, delimiter=';')
+        for ligne in lecteur_scan_dia:
+            print(ligne)
+            outOCR[str(directory + "\\" + ligne['nom_jpg'][:4] + "\\" + ligne['nom_jpg'])] = ligne['ImageCaption']
+    fichier_scan_dia.close()
 
 indx = 0
 donnees_fichiers = []
@@ -247,13 +269,7 @@ for photo in outOCR:
     indx += 1
 
 # Fermeture divDomaniales.ini
-file.close()
 print("Nombre de traitements : " + str(indx))
-
-# Definition des noms des champs du CSV
-noms_champs = ["chemin_jpg", "Category", "Orientation", "Keywords", "LocationName", "State", "City",
-                   "ContentLocName", "SubLocation", "ImageCredit", "ImageCaption", "Copyright", "RefService",
-                   "releaseDate", "DigitizeDate", "nom_final"]
 
 # Ecriture des données dans le fichier CSV
 with open(nom_fichier_csv, mode='w', newline='', encoding='ansi') as fichier_csv:
