@@ -50,7 +50,7 @@ mois = {
 # Expressions régulières pour extraire la date
 date_pattern = re.compile(r'(' + '|'.join(mois) + r')\s\d{4}'r'|\d\d\s(' + '|'.join(mois) + r')\s\d{4}',
                           re.IGNORECASE)
-date_num_pattern = re.compile(r'\d{1,2}.\d{1,2}.\d{4}|[12]\d\d\d')
+date_num_pattern = re.compile(r'\d{1,2}.\d{1,2}.(\d{2}|\d{4})|[12]\d\d\d')
 
 # Definition des noms des champs du CSV
 noms_champs = ["chemin_jpg", "Category", "Orientation", "Keywords", "LocationName", "State", "City",
@@ -153,7 +153,7 @@ elif mode =="3":
         lecteur_scan_dia = csv.DictReader(fichier_scan_dia, delimiter=';')
         for ligne in lecteur_scan_dia:
             print(ligne)
-            outOCR[str(directory + "\\" + ligne['nom_jpg'][:4] + "\\" + ligne['nom_jpg'])] = ligne['ImageCaption']
+            outOCR[str(directory + "\\" + ligne['chemin_jpg'])] = ligne['ImageCaption']
     fichier_scan_dia.close()
 
 indx = 0
@@ -184,6 +184,7 @@ for photo in outOCR:
     date_match = re.search(date_pattern, outOCR[photo])
     date_num_match = re.search(date_num_pattern, outOCR[photo])
 
+    date_string = ''
     #Si date écrite
     if date_match:
         date_string = date_match.group()
@@ -200,17 +201,20 @@ for photo in outOCR:
         donnees_fichiers[indx]["releaseDate"] = date_string
         donnees_fichiers[indx]["DigitizeDate"] = date_string
 
-
-
     #Si date numérique
     elif date_num_match:
         date_string = date_num_match.group()
         # Si AAAA
         if len(date_string) == 4:
             date_string = "01/01/" + date_string
+        # Si JJ MM AA
+        if len(date_string) == 8:
+            annee = date_string[6:]
+            date_string = date_string[:6] + "19" + annee
         date_string = date_string[0:2] + "/" + date_string[3:5] + "/" + date_string[6:10]
         donnees_fichiers[indx]["releaseDate"] = date_string
         donnees_fichiers[indx]["DigitizeDate"] = date_string
+
 
 
     # Pour CSV
