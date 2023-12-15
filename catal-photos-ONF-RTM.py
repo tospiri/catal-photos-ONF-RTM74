@@ -50,7 +50,8 @@ mois = {
 # Expressions régulières pour extraire la date
 date_pattern = re.compile(r'(' + '|'.join(mois) + r')\s\d{4}'r'|\d\d\s(' + '|'.join(mois) + r')\s\d{4}',
                           re.IGNORECASE)
-date_num_pattern = re.compile(r'\d{1,2}.\d{1,2}.(\d{2}|\d{4})|[12]\d\d\d')
+#JJ MM AAAA
+date_num_pattern = re.compile(r'\d{1,2}[-/. \\]\d{1,2}[-/. \\](\d{2}|\d{4})|1\d\d\d')
 
 # Definition des noms des champs du CSV
 noms_champs = ["chemin_jpg", "Category", "Orientation", "Keywords", "LocationName", "State", "City",
@@ -124,7 +125,7 @@ parse_keywords = lire_fichier_structure('keywords.ini')
 mode = input("Processus d'indexation automatique du RTM74, vous voulez :"
              "\n     Océriser et indexer les photos, entrez '1'. (Cas de base)"
              "\n     Indexer les légendes dans le ficher " + nom_fichier_csv + ", entrez '2'. (Utile lors d'un affinage des légendes, post étape 1.)"
-             "\n     Indexer des légendes depuis un fichier " + nom_fichier_imprt + " vers " + nom_fichier_csv + ", entrez '3'. (Utile suite à un légendage manuel, avec un chemin_jpg relatif.)")
+             "\n     Indexer des légendes depuis un fichier " + nom_fichier_imprt + " vers " + nom_fichier_csv + ", entrez '3'. (Utile suite à un légendage manuel.)")
 
 if mode == "1":
     #OCRisation des photos
@@ -142,9 +143,9 @@ elif mode == "2":
         # Crée un objet lecteur CSV
         lecteur_csv = csv.DictReader(fichier_csv, delimiter=';')
 
-        # Parcourt chaque ligne du fichier CSV, alimente outOCR chemin:légende
+        # Parcours chaque ligne du fichier CSV, alimente outOCR chemin:légende, enlève les precedents identifiants OCR
         for ligne in lecteur_csv:
-            outOCR[ligne['chemin_jpg']] = ligne['ImageCaption']
+            outOCR[ligne['chemin_jpg']] = re.sub("OCR n° \d*", "", ligne['ImageCaption'])
     fichier_csv.close()
 elif mode =="3":
     # Lire les données du fichier "scan_dia.csv"
@@ -180,8 +181,10 @@ for photo in outOCR:
         })
 
 # GESTION DATE :
+    date_match = ''
+    date_num_match = ''
     # Chercher la date dans le texte
-    date_match = re.search(date_pattern, outOCR[photo])
+    date_match = re.search(date_pattern, outOCR[photo].lower())
     date_num_match = re.search(date_num_pattern, outOCR[photo])
 
     date_string = ''
@@ -204,18 +207,35 @@ for photo in outOCR:
     #Si date numérique
     elif date_num_match:
         date_string = date_num_match.group()
-        # Si AAAA
-        if len(date_string) == 4:
+        print(date_string)
+        # Si AAAA et non pas M AA
+        if len(date_string) == 4 and re.match(r'\d', date_string[1]):
             date_string = "01/01/" + date_string
+        # Si M AA
+        elif len(date_string) == 4:
+            date_string = '0' + date_string
+        # Si MM? AAAA
+        if (re.match(r'\d\d?.\d\d\d\d', date_string)):
+            date_string = "01/" + date_string
+        # Si J MM AAAA
+        if not re.match(r'\d', date_string[1]):
+            date_string = '0' + date_string
+        # Si JJ M AAAA
+        if not re.match(r'\d', date_string[4]):
+            date_string = date_string[0:4] + '0' + date_string[4:]
+        # Si MM AA
+        if len(date_string) == 5:
+            date_string = '01/' + date_string
         # Si JJ MM AA
         if len(date_string) == 8:
             annee = date_string[6:]
             date_string = date_string[:6] + "19" + annee
-        date_string = date_string[0:2] + "/" + date_string[3:5] + "/" + date_string[6:10]
-        donnees_fichiers[indx]["releaseDate"] = date_string
-        donnees_fichiers[indx]["DigitizeDate"] = date_string
-
-
+        # On s'assure que la date est réaliste
+        print(date_string)
+        if int(date_string[6:10]) < 2000 and int(date_string[3:5]) <= 12 and len(date_string) == 10:
+            date_string = date_string[0:2] + "/" + date_string[3:5] + "/" + date_string[6:10]
+            donnees_fichiers[indx]["releaseDate"] = date_string
+            donnees_fichiers[indx]["DigitizeDate"] = date_string
 
     # Pour CSV
     outOCR[photo] = outOCR[photo].replace(';', ',')
@@ -260,7 +280,7 @@ for photo in outOCR:
     if not donnees_fichiers[indx]["City"] :
         donnees_fichiers[indx]["ImageCaption"] = donnees_fichiers[indx]["ImageCaption"] + " SL"
 
-    #Nommage du fichier, à déplacer dans un programme externe afin de le faire après redaction manuelle des légendes manquantes
+    #Nommage du fichier,
     if date_string:
         donnees_fichiers[indx]["nom_final"] = date_string[6:10]+date_string[3:5]+date_string[0:2]
     else:
@@ -270,6 +290,7 @@ for photo in outOCR:
     else:
         donnees_fichiers[indx]["nom_final"] = donnees_fichiers[indx]["nom_final"] + "-" + "inconnue"
     donnees_fichiers[indx]["nom_final"] = donnees_fichiers[indx]["nom_final"] + "-" + str(indx).rjust(4, '0')
+
     indx += 1
 
 # Fermeture divDomaniales.ini

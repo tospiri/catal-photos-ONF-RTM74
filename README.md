@@ -27,6 +27,7 @@ Ce code entre dans le contexte de la numérisation des photos des archives ONF d
 
 • divDomaniales.ini : liste des divisions domaniales spécifiques au service 74. Non employé.
 
+• interfaceEditCaption : programme alternatif permettant d'éditer manuellement les légendes du fichier csv.
 ## Utilisation <a name="utilisation"></a>
 
 1. [Installer tesseract](https://digi.bib.uni-mannheim.de/tesseract/tesseract-ocr-w64-setup-5.3.3.20231005.exe).
