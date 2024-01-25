@@ -19,6 +19,7 @@ directory = config['Fichiers']['directory']
 nom_fichier_csv = config['Fichiers']['nom_fichier_csv']
 formatImg = config['Fichiers']['formatImg']
 nom_fichier_imprt = config['Fichiers']['nom_fichier_imprt']
+id_OCR = config['Fichiers']['id_OCR']
 
 files = Path(directory).rglob(formatImg)
 
@@ -51,7 +52,7 @@ mois = {
 date_pattern = re.compile(r'(' + '|'.join(mois) + r')\s\d{4}'r'|\d\d\s(' + '|'.join(mois) + r')\s\d{4}',
                           re.IGNORECASE)
 #JJ MM AAAA
-date_num_pattern = re.compile(r'\d{1,2}[-/. \\]\d{1,2}[-/. \\](\d{2}|\d{4})|1\d\d\d')
+date_num_pattern = re.compile(r'\d{1,2}[-/. \\]\d{1,2}[-/. \\]\d{4}')
 
 # Definition des noms des champs du CSV
 noms_champs = ["chemin_jpg", "Category", "Orientation", "Keywords", "LocationName", "State", "City",
@@ -145,10 +146,13 @@ elif mode == "2":
 
         # Parcours chaque ligne du fichier CSV, alimente outOCR chemin:légende, enlève les precedents identifiants OCR
         for ligne in lecteur_csv:
-            outOCR[ligne['chemin_jpg']] = re.sub("OCR n° \d*", "", ligne['ImageCaption'])
+            chemin_fichier = ligne['chemin_fichier_absolu']
+            image_caption = re.sub("- OCR n° \d*", "", ligne['ImageCaption'])
+            outOCR[str(chemin_fichier)] = image_caption
+
     fichier_csv.close()
 elif mode =="3":
-    # Lire les données du fichier "scan_dia.csv"
+    # Lire les données du fichier "données_photo.csv"
     outOCR = {}
     with open(nom_fichier_imprt, mode='r', newline='', encoding='ansi') as fichier_scan_dia:
         lecteur_scan_dia = csv.DictReader(fichier_scan_dia, delimiter=';')
@@ -232,7 +236,7 @@ for photo in outOCR:
             date_string = date_string[:6] + "19" + annee
         # On s'assure que la date est réaliste
         print(date_string)
-        if int(date_string[6:10]) < 2000 and int(date_string[3:5]) <= 12 and len(date_string) == 10:
+        if int(date_string[6:10]) < 2010 and int(date_string[3:5]) <= 12 and len(date_string) == 10:
             date_string = date_string[0:2] + "/" + date_string[3:5] + "/" + date_string[6:10]
             donnees_fichiers[indx]["releaseDate"] = date_string
             donnees_fichiers[indx]["DigitizeDate"] = date_string
@@ -289,7 +293,7 @@ for photo in outOCR:
         donnees_fichiers[indx]["nom_final"] = donnees_fichiers[indx]["nom_final"] + "-" + results_locations[0][0][0:8]
     else:
         donnees_fichiers[indx]["nom_final"] = donnees_fichiers[indx]["nom_final"] + "-" + "inconnue"
-    donnees_fichiers[indx]["nom_final"] = donnees_fichiers[indx]["nom_final"] + "-" + str(indx).rjust(4, '0')
+    donnees_fichiers[indx]["nom_final"] = donnees_fichiers[indx]["nom_final"] + "-" + id_OCR + str(indx).rjust(4, '0')
 
     indx += 1
 
