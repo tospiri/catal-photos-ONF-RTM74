@@ -52,7 +52,7 @@ mois = {
 date_pattern = re.compile(r'(' + '|'.join(mois) + r')\s\d{4}'r'|\d\d\s(' + '|'.join(mois) + r')\s\d{4}',
                           re.IGNORECASE)
 #JJ MM AAAA
-date_num_pattern = re.compile(r'\d{1,2}[-/. \\]\d{1,2}[-/. \\]\d{4}')
+date_num_pattern = re.compile(r'\d{1,2}[-/. \\]\d{1,2}[-/. \\]\d{4}|\d{1,2}[-/. \\]\d{4}|\d{4}')
 
 # Definition des noms des champs du CSV
 noms_champs = ["chemin_jpg", "Category", "Orientation", "Keywords", "LocationName", "State", "City",
@@ -128,6 +128,8 @@ mode = input("Processus d'indexation automatique du RTM74, vous voulez :"
              "\n     Indexer les légendes dans le ficher " + nom_fichier_csv + ", entrez '2'. (Utile lors d'un affinage des légendes, post étape 1.)"
              "\n     Indexer des légendes depuis un fichier " + nom_fichier_imprt + " vers " + nom_fichier_csv + ", entrez '3'. (Utile suite à un légendage manuel.)")
 
+index_nommage = input("Quel index souhaitez-vous donner à ce lot (Si index = 'A', alors la légende finira par OCR n° A0001).")
+
 if mode == "1":
     #OCRisation des photos
     outOCR = {}
@@ -147,7 +149,7 @@ elif mode == "2":
         # Parcours chaque ligne du fichier CSV, alimente outOCR chemin:légende, enlève les precedents identifiants OCR
         for ligne in lecteur_csv:
             chemin_fichier = ligne['chemin_jpg']
-            image_caption = re.sub("- OCR n°.*", "", ligne['ImageCaption'])
+            image_caption = re.sub(" ?- OCR n°.*", "", ligne['ImageCaption'])
             outOCR[str(chemin_fichier)] = image_caption
 
     fichier_csv.close()
@@ -213,13 +215,10 @@ for photo in outOCR:
         date_string = date_num_match.group()
         print(date_string)
         # Si AAAA et non pas M AA
-        if len(date_string) == 4 and re.match(r'\d', date_string[1]):
+        if len(date_string) == 4 and re.match(r'\d*', date_string):
             date_string = "01/01/" + date_string
-        # Si M AA
-        elif len(date_string) == 4:
-            date_string = '0' + date_string
         # Si MM? AAAA
-        if (re.match(r'\d\d?.\d\d\d\d', date_string)):
+        if len(date_string) >= 7 and (re.match(r'\d\d?.\d\d\d\d', date_string)):
             date_string = "01/" + date_string
         # Si J MM AAAA
         if not re.match(r'\d', date_string[1]):
@@ -227,16 +226,13 @@ for photo in outOCR:
         # Si JJ M AAAA
         if not re.match(r'\d', date_string[4]):
             date_string = date_string[0:4] + '0' + date_string[4:]
-        # Si MM AA
-        if len(date_string) == 5:
-            date_string = '01/' + date_string
         # Si JJ MM AA
         if len(date_string) == 8:
             annee = date_string[6:]
             date_string = date_string[:6] + "19" + annee
         # On s'assure que la date est réaliste
         print(date_string)
-        if int(date_string[6:10]) < 2010 and int(date_string[3:5]) <= 12 and len(date_string) == 10:
+        if int(date_string[6:10]) < 2030 and int(date_string[3:5]) <= 12 and len(date_string) == 10:
             date_string = date_string[0:2] + "/" + date_string[3:5] + "/" + date_string[6:10]
             donnees_fichiers[indx]["releaseDate"] = date_string
             donnees_fichiers[indx]["DigitizeDate"] = date_string
@@ -283,12 +279,12 @@ for photo in outOCR:
                 if divDomCourt.upper() in outOCR[photo].replace("-", "_").upper():
                     donnees_fichiers[indx]["ContentLocName"] = divDomCourt
     # Le reste du texte est considéré comme la légende
-    donnees_fichiers[indx]["ImageCaption"] = nettoyer_legende(outOCR[photo]) + " - OCR n° " + str(indx)
+    donnees_fichiers[indx]["ImageCaption"] = nettoyer_legende(outOCR[photo]) + " - OCR n°" + index_nommage + str(indx)
     donnees_fichiers[indx]["ImageCredit"] = "Autre RTM"
 
-    if not donnees_fichiers[indx]["releaseDate"] :
+    if not donnees_fichiers[indx]["releaseDate"]:
         donnees_fichiers[indx]["ImageCaption"] = donnees_fichiers[indx]["ImageCaption"] + " SD"
-    if not donnees_fichiers[indx]["City"] :
+    if donnees_fichiers[indx]["City"] == "" and donnees_fichiers[indx]["ContentLocName"] == "":
         donnees_fichiers[indx]["ImageCaption"] = donnees_fichiers[indx]["ImageCaption"] + " SL"
 
     #Nommage du fichier,
