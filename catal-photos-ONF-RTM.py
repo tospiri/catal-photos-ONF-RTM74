@@ -146,8 +146,8 @@ elif mode == "2":
 
         # Parcours chaque ligne du fichier CSV, alimente outOCR chemin:légende, enlève les precedents identifiants OCR
         for ligne in lecteur_csv:
-            chemin_fichier = ligne['chemin_fichier_absolu']
-            image_caption = re.sub("- OCR n° \d*", "", ligne['ImageCaption'])
+            chemin_fichier = ligne['chemin_jpg']
+            image_caption = re.sub("- OCR n°.*", "", ligne['ImageCaption'])
             outOCR[str(chemin_fichier)] = image_caption
 
     fichier_csv.close()
@@ -256,7 +256,8 @@ for photo in outOCR:
     donnees_fichiers[indx]["chemin_jpg"] = photo
     if results_locations:
         donnees_fichiers[indx]["SubLocation"] = results_locations[0][1]
-        donnees_fichiers[indx]["City"] = results_locations[0][0]
+        if "COMMUNE" in donnees_fichiers[indx]["ImageCaption"].upper():
+            donnees_fichiers[indx]["City"] = results_locations[0][0]
     donnees_fichiers[indx]["LocationName"] = "FRANCE"
     donnees_fichiers[indx]["State"] = "HAUTE-SAVOIE"
     donnees_fichiers[indx]["Copyright"] = "© Office National des Forêts"
@@ -270,11 +271,17 @@ for photo in outOCR:
                 if correspondance.upper() == "GLISSEMENT": #Exception pour ce mot-clé courant
                     correspondance = "GLISSEMENT DE TERRAIN"
                 donnees_fichiers[indx]["Keywords"] = donnees_fichiers[indx]["Keywords"] + correspondance.upper() + ","
-    # Gestion des divisions domaniales, mais peu de chance d'indexer cette donnée automatiquement
-    with open("divsDomaniales.ini", 'r', encoding='utf-8') as file:
-        for line in file:
-            if line in outOCR[photo]:
-                donnees_fichiers[indx]["ContentLocName"] = line
+    # Gestion des divisions domaniales, mais peu de chance d'indexer cette donnée automatiquement.
+    if donnees_fichiers[indx]["City"] == "":
+        with open("divsDomaniales.csv", 'r', encoding='ansi') as csvfile:
+            reader = csv.reader(csvfile, delimiter=';')
+
+            for row in reader:
+                divDom = row[0].strip().replace("-", "_").upper()
+                divDomCourt = row[1].strip()
+
+                if divDomCourt.upper() in outOCR[photo].replace("-", "_").upper():
+                    donnees_fichiers[indx]["ContentLocName"] = divDomCourt
     # Le reste du texte est considéré comme la légende
     donnees_fichiers[indx]["ImageCaption"] = nettoyer_legende(outOCR[photo]) + " - OCR n° " + str(indx)
     donnees_fichiers[indx]["ImageCredit"] = "Autre RTM"
@@ -291,6 +298,8 @@ for photo in outOCR:
         donnees_fichiers[indx]["nom_final"] = "00000000"
     if results_locations:
         donnees_fichiers[indx]["nom_final"] = donnees_fichiers[indx]["nom_final"] + "-" + results_locations[0][0][0:8]
+    elif not donnees_fichiers[indx]["ContentLocName"] == "" :
+        donnees_fichiers[indx]["nom_final"] = donnees_fichiers[indx]["nom_final"] + "-" + donnees_fichiers[indx]["ContentLocName"][0:8]
     else:
         donnees_fichiers[indx]["nom_final"] = donnees_fichiers[indx]["nom_final"] + "-" + "inconnue"
     donnees_fichiers[indx]["nom_final"] = donnees_fichiers[indx]["nom_final"] + "-" + id_OCR + str(indx).rjust(4, '0')
