@@ -118,6 +118,9 @@ def nettoyer_legende(input_string):
     result = "-".join(cleaned_parts)
     return result
 
+def check_certitude(elements_found, required_certitude):
+    return certitude >= required_certitude if elements_found else False
+
 # Lecture des fichiers .ini
 parse_locations = lire_fichier_structure('SubLocation.ini')
 parse_keywords = lire_fichier_structure('keywords.ini')
@@ -164,7 +167,7 @@ elif mode =="3":
 
 indx = 0
 donnees_fichiers = []
-# Parcourir les données OCR
+
 for photo in outOCR:
     donnees_fichiers.append({
             "chemin_jpg": "",
@@ -249,10 +252,12 @@ for photo in outOCR:
 
     #Attribution des données
     donnees_fichiers[indx]["chemin_jpg"] = photo
+    city = ""
     if results_locations:
         donnees_fichiers[indx]["SubLocation"] = results_locations[0][1]
+        city = results_locations[0][0]
         if "COMMUNE" in donnees_fichiers[indx]["ImageCaption"].upper():
-            donnees_fichiers[indx]["City"] = results_locations[0][0]
+            donnees_fichiers[indx]["City"] = city
     donnees_fichiers[indx]["LocationName"] = "FRANCE"
     donnees_fichiers[indx]["State"] = "HAUTE-SAVOIE"
     donnees_fichiers[indx]["Copyright"] = "© Office National des Forêts"
@@ -270,17 +275,22 @@ for photo in outOCR:
     with open("divsDomaniales.csv", 'r', encoding='ansi') as csvfile:
         reader = csv.reader(csvfile, delimiter=';')
         DivDom = ""
-        for row in reader:
-            CsvDivDom = row[0].strip().replace("-", "_").upper()
-            CsvDivDomCourt = row[1].strip()
+        for line in reader:
+            CsvDivDom = line[0].strip().replace("-", "_").upper()
+            CsvDivDomCourt = line[1].split(',')
+            certitude_column = line[2].strip()
 
-            if CsvDivDomCourt.upper() in outOCR[photo].replace("-", "_").upper():
+            elements_found = sum(1 for value in CsvDivDomCourt if value in outOCR[photo].replace("-", "_").upper())
+            required_certitude = int(certitude_column)
+            certitude = check_certitude(elements_found, required_certitude)
+            if elements_found > 1:
                 DivDom = CsvDivDom
+
     #Si il n'y a pas de section domaniale, on part de principe que la commune détéctée est correcte
     #Sinon, si il n'y a pas de commune, alors on attribue la section domaniale
-    if DivDom == "" and not results_locations[0][0] == "":
-        donnees_fichiers[indx]["City"] = results_locations[0][0]
-    elif results_locations[0][0] == "":
+    if DivDom == "" and not city == "":
+        donnees_fichiers[indx]["City"] = city
+    elif city == "":
         donnees_fichiers[indx]["ContentLocName"] = DivDom
     # Le reste du texte est considéré comme la légende
     donnees_fichiers[indx]["ImageCaption"] = nettoyer_legende(outOCR[photo]) + " - OCR n°" + index_nommage + str(indx)
