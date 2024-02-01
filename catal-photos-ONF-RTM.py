@@ -19,7 +19,6 @@ directory = config['Fichiers']['directory']
 nom_fichier_csv = config['Fichiers']['nom_fichier_csv']
 formatImg = config['Fichiers']['formatImg']
 nom_fichier_imprt = config['Fichiers']['nom_fichier_imprt']
-id_OCR = config['Fichiers']['id_OCR']
 
 files = Path(directory).rglob(formatImg)
 
@@ -268,16 +267,21 @@ for photo in outOCR:
                     correspondance = "GLISSEMENT DE TERRAIN"
                 donnees_fichiers[indx]["Keywords"] = donnees_fichiers[indx]["Keywords"] + correspondance.upper() + ","
     # Gestion des divisions domaniales, mais peu de chance d'indexer cette donnée automatiquement.
-    if donnees_fichiers[indx]["City"] == "":
-        with open("divsDomaniales.csv", 'r', encoding='ansi') as csvfile:
-            reader = csv.reader(csvfile, delimiter=';')
+    with open("divsDomaniales.csv", 'r', encoding='ansi') as csvfile:
+        reader = csv.reader(csvfile, delimiter=';')
+        DivDom = ""
+        for row in reader:
+            CsvDivDom = row[0].strip().replace("-", "_").upper()
+            CsvDivDomCourt = row[1].strip()
 
-            for row in reader:
-                divDom = row[0].strip().replace("-", "_").upper()
-                divDomCourt = row[1].strip()
-
-                if divDomCourt.upper() in outOCR[photo].replace("-", "_").upper():
-                    donnees_fichiers[indx]["ContentLocName"] = divDomCourt
+            if CsvDivDomCourt.upper() in outOCR[photo].replace("-", "_").upper():
+                DivDom = CsvDivDom
+    #Si il n'y a pas de section domaniale, on part de principe que la commune détéctée est correcte
+    #Sinon, si il n'y a pas de commune, alors on attribue la section domaniale
+    if DivDom == "" and not results_locations[0][0] == "":
+        donnees_fichiers[indx]["City"] = results_locations[0][0]
+    elif results_locations[0][0] == "":
+        donnees_fichiers[indx]["ContentLocName"] = DivDom
     # Le reste du texte est considéré comme la légende
     donnees_fichiers[indx]["ImageCaption"] = nettoyer_legende(outOCR[photo]) + " - OCR n°" + index_nommage + str(indx)
     donnees_fichiers[indx]["ImageCredit"] = "Autre RTM"
@@ -298,7 +302,7 @@ for photo in outOCR:
         donnees_fichiers[indx]["nom_final"] = donnees_fichiers[indx]["nom_final"] + "-" + donnees_fichiers[indx]["ContentLocName"][0:8]
     else:
         donnees_fichiers[indx]["nom_final"] = donnees_fichiers[indx]["nom_final"] + "-" + "inconnue"
-    donnees_fichiers[indx]["nom_final"] = donnees_fichiers[indx]["nom_final"] + "-" + id_OCR + str(indx).rjust(4, '0')
+    donnees_fichiers[indx]["nom_final"] = donnees_fichiers[indx]["nom_final"] + "-" + index_nommage + str(indx).rjust(4, '0')
 
     indx += 1
 
