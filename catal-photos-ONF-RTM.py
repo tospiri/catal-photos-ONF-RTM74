@@ -91,12 +91,15 @@ def lire_fichier_structure(file_path):
                         line.lower())
 
     return structure
+
+def equivalence(texte):
+    return texte.replace('st','saint').replace('ô','o').replace('â','a').replace('ê','e').replace('è','e').replace('é','e').replace('ë','e')
 def chercher_correspondances(structure, texte):
     correspondances = []  # Liste pour stocker les correspondances trouvées
 
     def chercher_dans_structure(structure, texte, parent=None):
         for cle, valeur in structure.items():
-            if cle.lower() in texte.lower():
+            if cle.lower().replace('-','_') in equivalence(texte.lower()):
                 correspondances.append((cle, parent))
 
             if isinstance(valeur, dict):
@@ -117,9 +120,6 @@ def nettoyer_legende(input_string):
 
     result = "-".join(cleaned_parts)
     return result
-
-def check_certitude(elements_found, required_certitude):
-    return certitude >= required_certitude if elements_found else False
 
 # Lecture des fichiers .ini
 parse_locations = lire_fichier_structure('SubLocation.ini')
@@ -245,7 +245,7 @@ for photo in outOCR:
     outOCR[photo] = outOCR[photo].replace('\r', '')
 
     #Recherche du lieu dans les resultats
-    results_locations = chercher_correspondances(parse_locations, outOCR[photo].replace(' ', '_'))
+    results_locations = chercher_correspondances(parse_locations, outOCR[photo].replace(' ', '_').replace('-','_'))
 
     #Recherche des mots-clées dans les resultats
     results_keywords = chercher_correspondances(parse_keywords, outOCR[photo].replace(' ', '_'))
@@ -271,27 +271,28 @@ for photo in outOCR:
                 if correspondance.upper() == "GLISSEMENT": #Exception pour ce mot-clé courant
                     correspondance = "GLISSEMENT DE TERRAIN"
                 donnees_fichiers[indx]["Keywords"] = donnees_fichiers[indx]["Keywords"] + correspondance.upper() + ","
-    # Gestion des divisions domaniales, mais peu de chance d'indexer cette donnée automatiquement.
+    # Gestion des divisions domaniales, compliqué pour pas grand chose
     with open("divsDomaniales.csv", 'r', encoding='ansi') as csvfile:
         reader = csv.reader(csvfile, delimiter=';')
         DivDom = ""
+        last_elements = 0
         for line in reader:
-            CsvDivDom = line[0].strip().replace("-", "_").upper()
-            CsvDivDomCourt = line[1].split(',')
+            CsvDivDom = line[0]
+            CsvDivDomCourt = line[1].replace("-", "_").upper().split(',')
             certitude_column = line[2].strip()
 
-            elements_found = sum(1 for value in CsvDivDomCourt if value in outOCR[photo].replace("-", "_").upper())
+            elements_found = sum(1 for value in CsvDivDomCourt if value in equivalence(outOCR[photo].replace("-", "_").upper()))
             required_certitude = int(certitude_column)
-            certitude = check_certitude(elements_found, required_certitude)
-            if elements_found > 1:
-                DivDom = CsvDivDom
 
-    #Si il n'y a pas de section domaniale, on part de principe que la commune détéctée est correcte
-    #Sinon, si il n'y a pas de commune, alors on attribue la section domaniale
-    if DivDom == "" and not city == "":
-        donnees_fichiers[indx]["City"] = city
-    elif city == "":
+            if elements_found >= 1 and elements_found >= last_elements:
+                DivDom = CsvDivDom
+                last_elements = elements_found
+
+
+    if elements_found >= required_certitude or "S.D " in outOCR[photo] or "DOMANIALE" in  outOCR[photo].upper():
         donnees_fichiers[indx]["ContentLocName"] = DivDom
+    if not city == "":
+        donnees_fichiers[indx]["City"] = city
     # Le reste du texte est considéré comme la légende
     donnees_fichiers[indx]["ImageCaption"] = nettoyer_legende(outOCR[photo]) + " - OCR n°" + index_nommage + str(indx)
     donnees_fichiers[indx]["ImageCredit"] = "Autre RTM"
