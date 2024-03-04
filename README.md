@@ -25,7 +25,7 @@ Ce code entre dans le contexte de la numérisation des photos des archives ONF d
 
 • SubLocation.ini : liste des lieux reconnus dans la base Picasa (régions, régions naturelles, communes) spécifiques au service 74.
 
-• divDomaniales.ini : liste des divisions domaniales spécifiques au service 74. Non employé.
+• divDomaniales.ini : liste des divisions domaniales spécifiques au service 74.
 
 • interfaceEditCaption : programme alternatif permettant d'éditer manuellement les légendes du fichier csv.
 ## Utilisation <a name="utilisation"></a>
