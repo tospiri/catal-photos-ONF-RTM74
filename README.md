@@ -29,13 +29,26 @@ Ce code entre dans le contexte de la numérisation des photos des archives ONF d
 
 • interfaceEditCaption : programme alternatif permettant d'éditer manuellement les légendes du fichier csv.
 ## Utilisation <a name="utilisation"></a>
+Nécessite Python 3.11.
 
+Installation des dépendances :
+>pip install -r requirements.txt 
+
+**Cas d'utilisation 1 - Traitement par OCR :**
 1. [Installer tesseract](https://digi.bib.uni-mannheim.de/tesseract/tesseract-ocr-w64-setup-5.3.3.20231005.exe).
 2. Définir le chemin de tesseract.exe dans config.ini.
 3. Définir le répertoire contenant les photos à traiter dans config.ini, par défaut "process".
-4. Lancement du code.
+4. Lancement du code (cas 1).
 5. Récupération des données dans donnees_fichiers.csv
-    
+
+**Cas d'utilisation 2 - Indexation automatique d'un CSV :** 
+1. Définir le nom du fichier "nom_fichier_csv" dans config.ini, par défaut "donnees_photos.csv".
+2. Lancement du code (cas 2).
+3. Entrer une clé pour le nommage final des fichiers (facultatif).
+4. Récupération des données dans donnees_fichiers.csv.
+
+
+
 ## Contact <a name="contact"></a>
 Teïlo Ospiri : teilo.ospiri@onf.fr, teilo.ospiri@gmail.com
 

@@ -18,7 +18,6 @@ config_tesseract = config['Localisation OCR']['config_tesseract']
 directory = config['Fichiers']['directory']
 nom_fichier_csv = config['Fichiers']['nom_fichier_csv']
 formatImg = config['Fichiers']['formatImg']
-nom_fichier_imprt = config['Fichiers']['nom_fichier_imprt']
 
 files = Path(directory).rglob(formatImg)
 
@@ -127,8 +126,7 @@ parse_keywords = lire_fichier_structure('keywords.ini')
 
 mode = input("Processus d'indexation automatique du RTM74, vous voulez :"
              "\n     Océriser et indexer les photos, entrez '1'. (Cas de base)"
-             "\n     Indexer les légendes dans le ficher " + nom_fichier_csv + ", entrez '2'. (Utile lors d'un affinage des légendes, post étape 1.)"
-             "\n     Indexer des légendes depuis un fichier " + nom_fichier_imprt + " vers " + nom_fichier_csv + ", entrez '3'. (Utile suite à un légendage manuel.)")
+             "\n     Indexer les légendes dans le ficher " + nom_fichier_csv + ", entrez '2'. (Utile lors d'un affinage des légendes, post étape 1.)")
 
 index_nommage = input("Quel index souhaitez-vous donner à ce lot (Si index = 'A', alors la légende finira par OCR n° A0001).")
 
@@ -155,15 +153,6 @@ elif mode == "2":
             outOCR[str(chemin_fichier)] = image_caption
 
     fichier_csv.close()
-elif mode =="3":
-    # Lire les données du fichier "données_photo.csv"
-    outOCR = {}
-    with open(nom_fichier_imprt, mode='r', newline='', encoding='ansi') as fichier_scan_dia:
-        lecteur_scan_dia = csv.DictReader(fichier_scan_dia, delimiter=';')
-        for ligne in lecteur_scan_dia:
-            print(ligne)
-            outOCR[str(directory + "\\" + ligne['chemin_jpg'])] = ligne['ImageCaption']
-    fichier_scan_dia.close()
 
 indx = 0
 donnees_fichiers = []
