@@ -47,8 +47,20 @@ Installation des dépendances :
 3. Entrer une clé pour le nommage final des fichiers (facultatif).
 4. Récupération des données dans donnees_fichiers.csv.
 
+**InterfaceEditCaption**
+1. Installer les dépendances "requirements-interface.txt" :
+>pip install -r requirements-interface.txt 
 
-
+2. Intégrer un fichier donnees_photo.csv dans le même répertoire, contenant les colonnes 
+   1. "chemin_jpg" : Chemin absolu menant aux images.
+   2. "ImageCaption" : Légende à éditer.
+3. Lancer le programme :
+   1. La case supérieur contient la légende à éditer, la case inférieure permet de revenir en arrière en cas d'erreur.
+   2. On circule à travers les images via la colonne de droite ou via la molette.
+   2. Les légendes sont sauvegardées lorsque l'on change d'image via la molette.
+   3. Flèche du bas sauvegarde la légende, passe à l'image suivante et copie la dernière légende.
+   4. Cliquer sur l'image ouvre le JPG correspondant.
+   5. Le fichier CSV **ne doit pas** être ouvert lors du légendage.
 ## Contact <a name="contact"></a>
 Teïlo Ospiri : teilo.ospiri@onf.fr, teilo.ospiri@gmail.com
 
