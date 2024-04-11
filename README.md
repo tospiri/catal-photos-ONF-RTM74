@@ -1,7 +1,7 @@
 # catal-photos-ONF-RTM74
 
 Ce code entre dans le contexte de la numérisation des photos des archives ONF du service RTM 74. Le service inventorie environ 6000 photographies. L’objectif de ce programme est donc d’océriser automatiquement les légendes présentes sur les numérisations des photos et de trier le contenu dans un fichier CSV afin de simplifier l’importation des données IPTC dans la base Picasa.
-
+Le programme est accompagné d'une interface destinée à editer les légendes contenues dans le CSV.
 ## Table des Matières
 1. [Objectifs](#objectifs)
 2. [Structure](#structure)
@@ -38,7 +38,7 @@ Dans l'invite de commande, insérez :
 **Cas d'utilisation 1 - Traitement par OCR :**
 1. [Installer tesseract](https://digi.bib.uni-mannheim.de/tesseract/tesseract-ocr-w64-setup-5.3.3.20231005.exe).
 2. Définir le chemin de tesseract.exe dans config.ini.
-3. Définir le répertoire contenant les photos à traiter dans config.ini, par défaut "process".
+3. Insertion des JPGs dans /process.
 4. Lancement du code (cas 1) :
 >python catal-photo-ONF-RTM.py
 
@@ -52,7 +52,10 @@ Dans l'invite de commande, insérez :
 3. Entrer une clé pour le nommage final des fichiers (facultatif).
 4. Récupération des données dans donnees_fichiers.csv.
 
-**InterfaceEditCaption**
+**Cas d'utilisation 3 - Compression, renommage et regroupement  :**
+Après insertion des données IPTC, il peut être desirable de compresser, renommer et regrouper les JPGS. Le renommage est irreversible.
+
+### InterfaceEditCaption
 1. Installer les dépendances "requirements-interface.txt" :
 Dans l'invite de commande, insérez :
 
@@ -65,11 +68,18 @@ Dans l'invite de commande, insérez :
 >python interfaceEditCaption.py
 
    1. La case supérieur contient la légende à éditer, la case inférieure permet de revenir en arrière en cas d'erreur.
-   2. On circule à travers les images via la colonne de droite ou via la molette.
+   2. On circule à travers les images via la colonne de droite, via PageUp et PageDown, ou via la molette.
    2. Les légendes sont sauvegardées lorsque l'on change d'image via la molette.
    3. Flèche du bas sauvegarde la légende, passe à l'image suivante et copie la dernière légende.
    4. Cliquer sur l'image ouvre le JPG correspondant.
    5. Le fichier CSV **ne doit pas** être ouvert lors du légendage.
+   
+   
+### import_iptc.exe
+Ce programme m'a été fourni par le responable de la photothèque du service.
+Il est essentiel pour importer les données IPTC dans les JPG, à partir du CSV.
+Il est important de noter que les données IPTC ne sont plus modifiable après utilisation de ce logiciel.
+
 ## Contact <a name="contact"></a>
 Teïlo Ospiri : teilo.ospiri@onf.fr, teilo.ospiri@gmail.com
 

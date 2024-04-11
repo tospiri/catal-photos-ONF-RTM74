@@ -5,6 +5,7 @@ import pytesseract
 import time
 import os
 import sys
+from PIL import Image
 
 from pathlib import Path
 
@@ -22,7 +23,8 @@ config_tesseract = config['Localisation OCR']['config_tesseract']
 nom_fichier_csv = config['Fichiers']['nom_fichier_csv']
 formatImg = config['Fichiers']['formatImg']
 directory = os.path.dirname(os.path.abspath(sys.argv[0]))
-files = Path(directory).rglob(formatImg)
+processDirectory = directory+"\\process"
+files = Path(processDirectory).rglob(formatImg)
 
 """
 # Données de test :
@@ -123,13 +125,110 @@ def nettoyer_legende(input_string):
     result = "-".join(cleaned_parts)
     return result
 
+def compress_images(input_dir, output_dir, target_size=2_000_000, min_size=1_200_000, min_quality=10):
+
+
+    for filename in files:
+
+        relative_path = os.path.relpath(filename,
+                                        start="C:\\Users\\pc\\Desktop\\Editphoto\\catal-photos-ONF-RTM74\\process")
+
+        count=0
+
+        input_path = os.path.join(input_dir, relative_path)
+        output_path = os.path.join(output_dir, relative_path)
+        print(output_path)
+
+        output_dirname = os.path.dirname(output_path)
+        if not os.path.exists(output_dirname):
+            os.makedirs(output_dirname)
+
+        with Image.open(input_path) as img:
+            if os.path.getsize(input_path) <= target_size:
+                img.save(output_path)
+                print(f"{filename} a été enregistré sans compression.")
+            else:
+                try:
+                    img.save(output_path, quality=img.info['quality'] - 10)
+                except KeyError:
+                    img.save(output_path, quality=75)
+                print(f"{filename} a été compressé et enregistré.")
+                while os.path.getsize(output_path) > target_size:
+                    if count > 20:
+                        break
+                    current_quality = img.info.get('quality', 75) - 10
+                    if current_quality < min_quality:
+                        break
+                    img.save(output_path, quality=current_quality)
+                    print(f"{filename} a été réduit dans la boucle de compression : {os.path.getsize(output_path)}")
+                    if os.path.getsize(output_path) < min_size:
+                        break
+                    count+=1
+
+def compress_images_undir(input_dir, output_dir, target_size=2_000_000, min_size=1_200_000, min_quality=10):
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    for filename in os.listdir(input_dir):
+        count = 0
+        if filename.lower().endswith(".jpg") or filename.lower().endswith(".jpeg"):
+            input_path = os.path.join(input_dir, filename)
+            output_path = os.path.join(output_dir, filename)
+            with Image.open(input_path) as img:
+                if os.path.getsize(input_path) <= target_size:
+                    img.save(output_path)
+                    print(f"{filename} a été enregistré sans compression.")
+                else:
+                    try:
+                        img.save(output_path, quality=img.info['quality'] - 10)
+                    except KeyError:
+                        img.save(output_path, quality=75)
+                    print(f"{filename} a été compressé et enregistré.")
+                    while os.path.getsize(output_path) > target_size:
+                        if count > 20:
+                            break
+                        current_quality = img.info.get('quality', 75) - 10
+                        if current_quality < min_quality:
+                            break
+                        img.save(output_path, quality=current_quality)
+                        print(f"{filename} a été réduit dans la boucle de compression : {os.path.getsize(output_path)}")
+                        if os.path.getsize(output_path) < min_size:
+                            break
+                        count += 1
+
+def renommer_fichiers(csv_path):
+    with open(csv_path, 'r', encoding='ansi') as fichier_csv:
+        lecteur_csv = csv.DictReader(fichier_csv, delimiter=';')
+
+        for ligne in lecteur_csv:
+            chemin_absolu = ligne['chemin_jpg']
+            nouveau_nom = ligne['nom_final']
+
+            # Obtenir le chemin du répertoire du fichier
+            repertoire, ancien_nom = os.path.split(chemin_absolu)
+
+            # Construire le nouveau chemin absolu avec le nouveau nom de fichier
+            nouveau_chemin = os.path.join(directory+"\\compressed", f'{nouveau_nom}.jpg')
+            try:
+                os.rename(chemin_absolu, nouveau_chemin)
+                print(f'Le fichier {chemin_absolu} a été renommé en {nouveau_chemin}')
+            except Exception as e:
+                print(f'Erreur lors du renommage du fichier {chemin_absolu}: {str(e)}')
+
 # Lecture des fichiers .ini
 parse_locations = lire_fichier_structure('SubLocation.ini')
 parse_keywords = lire_fichier_structure('keywords.ini')
 
 mode = input("Processus d'indexation automatique du RTM74, vous voulez :"
              "\n     Océriser et indexer les photos, entrez '1'. (Cas de base)"
-             "\n     Indexer les légendes dans le ficher " + nom_fichier_csv + ", entrez '2'. (Utile lors d'un affinage des légendes, post étape 1.)")
+             "\n     Indexer les légendes dans le ficher " + nom_fichier_csv + ", entrez '2'. (Utile suite à l'affinage des légendes, post étape 1.)"
+             "\n     Compresser et renommer les fichiers, entrez '3'. (Suite à l'insertion des données IPTC.)")
+
+if mode == "3" :
+    renommer_fichiers(nom_fichier_csv)
+    compress_images_undir(processDirectory, directory+"\\compressed")
+    print("Les fichiers ont été enregistrés dans \compressed.")
+    exit()
 
 index_nommage = input("Quel index souhaitez-vous donner à ce lot (Si index = 'A', alors la légende finira par OCR n° A0001).")
 
@@ -137,7 +236,7 @@ if mode == "1":
     #OCRisation des photos
     outOCR = {}
     if not files:
-        print("Aucun fichier détécté, avez-vous renseigné correctement config.ini ?")
+        print("Aucun fichier détecté, avez-vous renseigné correctement config.ini ?")
     for jpgs in files:
         image = cv2.imread(str(jpgs), cv2.IMREAD_GRAYSCALE)
         print(jpgs)
@@ -322,3 +421,6 @@ with open(nom_fichier_csv, mode='w', newline='', encoding='ansi') as fichier_csv
 
 t1 = time.time()
 print("temps : = " + str(t1-t0))
+
+
+
