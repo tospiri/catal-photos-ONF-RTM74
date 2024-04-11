@@ -30,8 +30,8 @@ class PhotoEditor:
         self.width = 700
 
         # Liens pour les touches de clavier
-        #root.bind("<Right>", self.on_right_arrow)
-        #root.bind("<Left>", self.on_left_arrow)
+        root.bind("<Next>", self.on_right_arrow)
+        root.bind("<Prior>", self.on_left_arrow)
         root.bind("<MouseWheel>", self.on_mousewheel)
         root.bind("<Down>", self.on_down_arrow)
         root.bind("<Up>", self.on_up_arrow)

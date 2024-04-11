@@ -3,6 +3,8 @@ import csv
 import cv2
 import pytesseract
 import time
+import os
+import sys
 
 from pathlib import Path
 
@@ -15,10 +17,11 @@ config.read('config.ini')
 # Variables configurés
 pytesseract.pytesseract.tesseract_cmd = config['Localisation OCR']['pytesseract.pytesseract.tesseract_cmd']
 config_tesseract = config['Localisation OCR']['config_tesseract']
-directory = config['Fichiers']['directory']
+# Chemin manuel des images
+# directory = config['Fichiers']['directory']
 nom_fichier_csv = config['Fichiers']['nom_fichier_csv']
 formatImg = config['Fichiers']['formatImg']
-
+directory = os.path.dirname(os.path.abspath(sys.argv[0]))
 files = Path(directory).rglob(formatImg)
 
 """
