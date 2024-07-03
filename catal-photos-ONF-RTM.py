@@ -180,15 +180,15 @@ def compress_images_undir(input_dir, output_dir, target_size=2_000_000, min_size
                     print(f"{filename} a été enregistré sans compression.")
                 else:
                     try:
-                        img.save(output_path, quality=img.info['quality'] - 10)
+                        img.save(output_path, quality=img.info['quality'] - 5)
                     except KeyError:
                         img.save(output_path, quality=75)
                     print(f"{filename} a été compressé et enregistré.")
                     while os.path.getsize(output_path) > target_size:
                         if count > 20:
                             break
-                        current_quality = img.info.get('quality', 75) - 10
-                        if current_quality < min_quality:
+                        current_quality = img.info.get('quality', 75) - 5
+                        if os.path.getsize(input_path) <= target_size:
                             break
                         img.save(output_path, quality=current_quality)
                         print(f"{filename} a été réduit dans la boucle de compression : {os.path.getsize(output_path)}")
